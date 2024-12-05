@@ -1,41 +1,42 @@
-name: Build and push Docker images
-
+name: Python CI Workflow
+ 
 on:
   push:
     branches:
-      - main
-
+      - main  # Trigger on push to main
+  pull_request:
+    branches:
+      - main  # Trigger on pull request to main
+ 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  test:
     strategy:
       matrix:
-        platform:
-          - linux/arm64/v8
-          - linux/amd64
-
+        python-version: [3.8, 3.9]  # Test only Python 3.8 and 3.9
+        os: [ubuntu-latest, windows-latest, macos-latest]  # Different OS
+ 
+    runs-on: ${{ matrix.os }}  # The OS will be selected from the matrix
+ 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
+        uses: actions/checkout@v3  # Checkout the repository's code
+ 
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4  # Set up Python version
         with:
-          username: ${{ secrets.shruti0909 }}
-          password: ${{ secrets.chobe0909 }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          tags: REPO/APP:MY_TAG
-          platforms: ${{ matrix.platform }}
+          python-version: ${{ matrix.python-version }}
+ 
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip  # Upgrade pip
+          pip install -r requirements.txt || echo "No requirements.txt file"  # Install dependencies (if any)
+ 
+      - name: Show Python version and OS
+        run: |
+          echo "Running on OS: ${{ matrix.os }}"
+          python --version  # Check Python version
+ 
+      - name: Run main.py
+        run: |
+          python main.py  # Execute your main.py script
+ 
